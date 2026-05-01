@@ -1,0 +1,70 @@
+# =========================
+# Java / Spring Boot
+# =========================
+target/
+build/
+out/
+*.class
+*.log
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# =========================
+# ENV (NUNCA subir)
+# =========================
+.env
+.env.*
+*.env
+
+# =========================
+# IntelliJ IDEA
+# =========================
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+
+# =========================
+# Eclipse / STS
+# =========================
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# =========================
+# NetBeans
+# =========================
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs e arquivos temporários
+# =========================
+logs/
+*.tmp
+*.swp
+
+# =========================
+# Segurança
+# =========================
+# NÃO ignorar application.properties ❗
+# Apenas garantir que não tenha secrets dentro dele
