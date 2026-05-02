@@ -2,6 +2,7 @@ package com.moneto.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -36,6 +37,12 @@ public class User {
 
     @Column(nullable = false)
     private String plano;
+
+    @Column(name = "orcamentos_json", columnDefinition = "TEXT")
+    private String orcamentosJson;
+
+    @Column(name = "notificacoes_json", columnDefinition = "TEXT")
+    private String notificacoesJson;
 
     @Column(name = "failed_attempts")
     private Integer failedAttempts;
@@ -129,6 +136,22 @@ public class User {
 
     public void setPlano(String plano) {
         this.plano = plano;
+    }
+
+    public String getOrcamentosJson() {
+        return orcamentosJson;
+    }
+
+    public void setOrcamentosJson(String orcamentosJson) {
+        this.orcamentosJson = orcamentosJson;
+    }
+
+    public String getNotificacoesJson() {
+        return notificacoesJson;
+    }
+
+    public void setNotificacoesJson(String notificacoesJson) {
+        this.notificacoesJson = notificacoesJson;
     }
 
     public Integer getFailedAttempts() {
