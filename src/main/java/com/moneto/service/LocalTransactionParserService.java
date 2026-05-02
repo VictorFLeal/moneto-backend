@@ -1,7 +1,6 @@
 package com.moneto.service;
 
 import com.moneto.dto.ParsedTransactionDTO;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -9,7 +8,6 @@ import java.time.LocalDate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Slf4j
 @Service
 public class LocalTransactionParserService {
 
@@ -47,9 +45,7 @@ public class LocalTransactionParserService {
         dto.setCategoria(categoria);
         dto.setDescricao(descricao);
         dto.setData(LocalDate.now());
-
-        log.info("Parser local OK: valor={}, tipo={}, categoria={}, descricao={}",
-                valor, tipo, categoria, descricao);
+        dto.setErro(null);
 
         return dto;
     }
@@ -81,57 +77,39 @@ public class LocalTransactionParserService {
     }
 
     private String detectarCategoria(String msg) {
-        if (msg.contains("mercado")
-                || msg.contains("ifood")
-                || msg.contains("comida")
-                || msg.contains("restaurante")
-                || msg.contains("lanche")
-                || msg.contains("padaria")
-                || msg.contains("pizza")) {
+        if (msg.contains("mercado") || msg.contains("ifood") || msg.contains("comida")
+                || msg.contains("restaurante") || msg.contains("lanche")
+                || msg.contains("padaria") || msg.contains("pizza")) {
             return "Alimentação";
         }
 
-        if (msg.contains("uber")
-                || msg.contains("99")
-                || msg.contains("ônibus")
-                || msg.contains("onibus")
-                || msg.contains("gasolina")
+        if (msg.contains("uber") || msg.contains("99") || msg.contains("ônibus")
+                || msg.contains("onibus") || msg.contains("gasolina")
                 || msg.contains("transporte")) {
             return "Transporte";
         }
 
-        if (msg.contains("luz")
-                || msg.contains("água")
-                || msg.contains("agua")
-                || msg.contains("internet")
-                || msg.contains("aluguel")
+        if (msg.contains("luz") || msg.contains("água") || msg.contains("agua")
+                || msg.contains("internet") || msg.contains("aluguel")
                 || msg.contains("casa")) {
             return "Moradia";
         }
 
-        if (msg.contains("remédio")
-                || msg.contains("remedio")
-                || msg.contains("farmácia")
-                || msg.contains("farmacia")
-                || msg.contains("médico")
-                || msg.contains("medico")
+        if (msg.contains("remédio") || msg.contains("remedio")
+                || msg.contains("farmácia") || msg.contains("farmacia")
+                || msg.contains("médico") || msg.contains("medico")
                 || msg.contains("consulta")) {
             return "Saúde";
         }
 
-        if (msg.contains("curso")
-                || msg.contains("faculdade")
-                || msg.contains("senac")
-                || msg.contains("livro")
-                || msg.contains("educação")
-                || msg.contains("educacao")) {
+        if (msg.contains("curso") || msg.contains("faculdade")
+                || msg.contains("senac") || msg.contains("livro")
+                || msg.contains("educação") || msg.contains("educacao")) {
             return "Educação";
         }
 
-        if (msg.contains("netflix")
-                || msg.contains("cinema")
-                || msg.contains("jogo")
-                || msg.contains("lazer")
+        if (msg.contains("netflix") || msg.contains("cinema")
+                || msg.contains("jogo") || msg.contains("lazer")
                 || msg.contains("show")) {
             return "Lazer";
         }

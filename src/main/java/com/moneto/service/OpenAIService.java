@@ -3,19 +3,20 @@ package com.moneto.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moneto.dto.ParsedTransactionDTO;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
 import java.math.BigDecimal;
 import java.util.*;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class OpenAIService {
+
+    private static final Logger log = LoggerFactory.getLogger(OpenAIService.class);
 
     @Value("${openai.api.key}")
     private String apiKey;
@@ -31,14 +32,16 @@ public class OpenAIService {
     private static final String SYSTEM_PROMPT = """
         Você é um assistente financeiro do aplicativo Moneto.
         Sua função é extrair informações financeiras de mensagens em português brasileiro.
-        
+
         Quando o utilizador enviar uma mensagem, extrai:
         - valor: número decimal (ex: 50.00)
-        - tipo: "RECEITA" (ganho, recebeu, entrada) ou "DESPESA" (gastou, pagou, saída)
-        - categoria: uma das seguintes: Alimentação, Transporte, Moradia, Lazer, Saúde, Educação, Vestuário, Trabalho, Tecnologia, Salário, Freelance, Investimento, Outros
+        - tipo: "RECEITA" ou "DESPESA"
+        - categoria: Alimentação, Transporte, Moradia, Lazer, Saúde, Educação, Vestuário, Trabalho, Tecnologia, Salário, Freelance, Investimento, Outros
         - descricao: descrição curta e clara da transação
-        
-        Responde APENAS com JSON válido, sem markdown, sem explicações:
+
+        Responde APENAS com JSON válido, sem markdown, sem explicações.
+
+        Exemplo válido:
         {
           "parsed": true,
           "valor": 50.00,
@@ -46,20 +49,12 @@ public class OpenAIService {
           "categoria": "Alimentação",
           "descricao": "iFood"
         }
-        
-        Se não conseguires extrair informação financeira, responde:
+
+        Se não conseguires extrair informação financeira:
         {
           "parsed": false,
-          "erro": "Não entendi a transação. Tenta: 'gastei 50 no mercado' ou 'recebi 1000 de salário'"
+          "erro": "Não entendi a transação."
         }
-        
-        Exemplos:
-        - "gastei 50 reais com ifood" → DESPESA, 50.00, Alimentação
-        - "paguei 120 na luz" → DESPESA, 120.00, Moradia
-        - "recebi 3000 de salário" → RECEITA, 3000.00, Salário
-        - "ganhei 500 de freela" → RECEITA, 500.00, Freelance
-        - "uber custou 28 reais" → DESPESA, 28.00, Transporte
-        - "comprei remédio 45 reais" → DESPESA, 45.00, Saúde
         """;
 
     public ParsedTransactionDTO parseMessage(String userMessage) {
@@ -67,11 +62,10 @@ public class OpenAIService {
         result.setMensagemOriginal(userMessage);
 
         try {
-            // Monta o request para a OpenAI
             Map<String, Object> body = new HashMap<>();
             body.put("model", model);
             body.put("max_tokens", 200);
-            body.put("temperature", 0.1); // Baixa temperatura para respostas consistentes
+            body.put("temperature", 0.1);
 
             List<Map<String, String>> messages = new ArrayList<>();
             messages.add(Map.of("role", "system", "content", SYSTEM_PROMPT));
@@ -85,21 +79,21 @@ public class OpenAIService {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
             ResponseEntity<String> response = restTemplate.postForEntity(
-                    OPENAI_URL, entity, String.class
+                    OPENAI_URL,
+                    entity,
+                    String.class
             );
 
-            // Extrai o conteúdo da resposta
-            JsonNode root    = objectMapper.readTree(response.getBody());
-            String content   = root.path("choices").get(0).path("message").path("content").asText();
+            JsonNode root = objectMapper.readTree(response.getBody());
+            String content = root.path("choices").get(0).path("message").path("content").asText();
 
             log.info("OpenAI response for '{}': {}", userMessage, content);
 
-            // Parse do JSON retornado pela IA
             JsonNode parsed = objectMapper.readTree(content.trim());
 
             result.setParsed(parsed.path("parsed").asBoolean(false));
 
-            if (result.isParsed()) {
+            if (Boolean.TRUE.equals(result.getParsed())) {
                 result.setValor(new BigDecimal(parsed.path("valor").asText("0")));
                 result.setTipo(parsed.path("tipo").asText("DESPESA"));
                 result.setCategoria(parsed.path("categoria").asText("Outros"));
@@ -110,6 +104,7 @@ public class OpenAIService {
 
         } catch (Exception e) {
             log.error("Erro ao chamar OpenAI: {}", e.getMessage());
+
             result.setParsed(false);
             result.setErro("Erro ao processar a mensagem. Tenta novamente.");
         }
