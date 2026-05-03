@@ -35,12 +35,19 @@ public class WhatsAppService {
             body.put("messaging_product", "whatsapp");
             body.put("recipient_type", "individual");
             body.put("to", normalizePhone(to));
-            body.put("type", "text");
 
-            Map<String, String> text = new HashMap<>();
-            text.put("preview_url", "false");
-            text.put("body", message);
-            body.put("text", text);
+            // 🔥 ALTERAÇÃO AQUI (TEMPLATE)
+            body.put("type", "template");
+
+            Map<String, Object> template = new HashMap<>();
+            template.put("name", "hello_world");
+
+            Map<String, String> language = new HashMap<>();
+            language.put("code", "en_US");
+
+            template.put("language", language);
+
+            body.put("template", template);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -77,6 +84,7 @@ public class WhatsAppService {
                         "\"resumo do mês\"\n\n" +
                         "Testa agora 👆";
 
+        // ⚠️ aqui ainda chama sendMessage, mas no modo teste vai mandar template hello_world
         sendMessage(to, message);
     }
 
