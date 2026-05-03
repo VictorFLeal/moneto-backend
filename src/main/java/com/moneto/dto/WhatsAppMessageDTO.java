@@ -8,62 +8,32 @@ public class WhatsAppMessageDTO {
     private String object;
     private List<Entry> entry;
 
-    public String getObject() {
-        return object;
-    }
+    public String getObject() { return object; }
+    public void setObject(String object) { this.object = object; }
 
-    public void setObject(String object) {
-        this.object = object;
-    }
-
-    public List<Entry> getEntry() {
-        return entry;
-    }
-
-    public void setEntry(List<Entry> entry) {
-        this.entry = entry;
-    }
+    public List<Entry> getEntry() { return entry; }
+    public void setEntry(List<Entry> entry) { this.entry = entry; }
 
     public static class Entry {
         private String id;
         private List<Change> changes;
 
-        public String getId() {
-            return id;
-        }
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
 
-        public void setId(String id) {
-            this.id = id;
-        }
-
-        public List<Change> getChanges() {
-            return changes;
-        }
-
-        public void setChanges(List<Change> changes) {
-            this.changes = changes;
-        }
+        public List<Change> getChanges() { return changes; }
+        public void setChanges(List<Change> changes) { this.changes = changes; }
     }
 
     public static class Change {
         private String field;
         private Value value;
 
-        public String getField() {
-            return field;
-        }
+        public String getField() { return field; }
+        public void setField(String field) { this.field = field; }
 
-        public void setField(String field) {
-            this.field = field;
-        }
-
-        public Value getValue() {
-            return value;
-        }
-
-        public void setValue(Value value) {
-            this.value = value;
-        }
+        public Value getValue() { return value; }
+        public void setValue(Value value) { this.value = value; }
     }
 
     public static class Value {
@@ -74,37 +44,24 @@ public class WhatsAppMessageDTO {
         private List<Contact> contacts;
         private List<Message> messages;
 
-        public String getMessagingProduct() {
-            return messagingProduct;
-        }
+        // 🔥 NOVO
+        private List<Status> statuses;
 
-        public void setMessagingProduct(String messagingProduct) {
-            this.messagingProduct = messagingProduct;
-        }
+        public String getMessagingProduct() { return messagingProduct; }
+        public void setMessagingProduct(String messagingProduct) { this.messagingProduct = messagingProduct; }
 
-        public Metadata getMetadata() {
-            return metadata;
-        }
+        public Metadata getMetadata() { return metadata; }
+        public void setMetadata(Metadata metadata) { this.metadata = metadata; }
 
-        public void setMetadata(Metadata metadata) {
-            this.metadata = metadata;
-        }
+        public List<Contact> getContacts() { return contacts; }
+        public void setContacts(List<Contact> contacts) { this.contacts = contacts; }
 
-        public List<Contact> getContacts() {
-            return contacts;
-        }
+        public List<Message> getMessages() { return messages; }
+        public void setMessages(List<Message> messages) { this.messages = messages; }
 
-        public void setContacts(List<Contact> contacts) {
-            this.contacts = contacts;
-        }
-
-        public List<Message> getMessages() {
-            return messages;
-        }
-
-        public void setMessages(List<Message> messages) {
-            this.messages = messages;
-        }
+        // 🔥 getters/setters do status
+        public List<Status> getStatuses() { return statuses; }
+        public void setStatuses(List<Status> statuses) { this.statuses = statuses; }
     }
 
     public static class Metadata {
@@ -114,21 +71,11 @@ public class WhatsAppMessageDTO {
         @JsonProperty("phone_number_id")
         private String phoneNumberId;
 
-        public String getDisplayPhoneNumber() {
-            return displayPhoneNumber;
-        }
+        public String getDisplayPhoneNumber() { return displayPhoneNumber; }
+        public void setDisplayPhoneNumber(String displayPhoneNumber) { this.displayPhoneNumber = displayPhoneNumber; }
 
-        public void setDisplayPhoneNumber(String displayPhoneNumber) {
-            this.displayPhoneNumber = displayPhoneNumber;
-        }
-
-        public String getPhoneNumberId() {
-            return phoneNumberId;
-        }
-
-        public void setPhoneNumberId(String phoneNumberId) {
-            this.phoneNumberId = phoneNumberId;
-        }
+        public String getPhoneNumberId() { return phoneNumberId; }
+        public void setPhoneNumberId(String phoneNumberId) { this.phoneNumberId = phoneNumberId; }
     }
 
     public static class Contact {
@@ -137,33 +84,18 @@ public class WhatsAppMessageDTO {
         @JsonProperty("wa_id")
         private String waId;
 
-        public Profile getProfile() {
-            return profile;
-        }
+        public Profile getProfile() { return profile; }
+        public void setProfile(Profile profile) { this.profile = profile; }
 
-        public void setProfile(Profile profile) {
-            this.profile = profile;
-        }
-
-        public String getWaId() {
-            return waId;
-        }
-
-        public void setWaId(String waId) {
-            this.waId = waId;
-        }
+        public String getWaId() { return waId; }
+        public void setWaId(String waId) { this.waId = waId; }
     }
 
     public static class Profile {
         private String name;
 
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
     }
 
     public static class Message {
@@ -173,56 +105,74 @@ public class WhatsAppMessageDTO {
         private String type;
         private Text text;
 
-        public String getFrom() {
-            return from;
-        }
+        public String getFrom() { return from; }
+        public void setFrom(String from) { this.from = from; }
 
-        public void setFrom(String from) {
-            this.from = from;
-        }
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
 
-        public String getId() {
-            return id;
-        }
+        public String getTimestamp() { return timestamp; }
+        public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
 
-        public void setId(String id) {
-            this.id = id;
-        }
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
 
-        public String getTimestamp() {
-            return timestamp;
-        }
-
-        public void setTimestamp(String timestamp) {
-            this.timestamp = timestamp;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
-
-        public Text getText() {
-            return text;
-        }
-
-        public void setText(Text text) {
-            this.text = text;
-        }
+        public Text getText() { return text; }
+        public void setText(Text text) { this.text = text; }
     }
 
     public static class Text {
         private String body;
 
-        public String getBody() {
-            return body;
-        }
+        public String getBody() { return body; }
+        public void setBody(String body) { this.body = body; }
+    }
 
-        public void setBody(String body) {
-            this.body = body;
-        }
+    // 🔥 NOVO — STATUS
+    public static class Status {
+        private String id;
+        private String status;
+        private String timestamp;
+
+        @JsonProperty("recipient_id")
+        private String recipientId;
+
+        private List<StatusError> errors;
+
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
+
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
+
+        public String getTimestamp() { return timestamp; }
+        public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
+
+        public String getRecipientId() { return recipientId; }
+        public void setRecipientId(String recipientId) { this.recipientId = recipientId; }
+
+        public List<StatusError> getErrors() { return errors; }
+        public void setErrors(List<StatusError> errors) { this.errors = errors; }
+    }
+
+    public static class StatusError {
+        private Integer code;
+        private String title;
+        private String message;
+
+        @JsonProperty("error_data")
+        private Object errorData;
+
+        public Integer getCode() { return code; }
+        public void setCode(Integer code) { this.code = code; }
+
+        public String getTitle() { return title; }
+        public void setTitle(String title) { this.title = title; }
+
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+
+        public Object getErrorData() { return errorData; }
+        public void setErrorData(Object errorData) { this.errorData = errorData; }
     }
 }
