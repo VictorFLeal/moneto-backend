@@ -61,7 +61,24 @@ public class WhatsAppWebhookController {
 
                     WhatsAppMessageDTO.Value value = change.getValue();
 
-                    if (value == null || value.getMessages() == null) continue;
+                    if (value == null) continue;
+
+                    // ========================
+                    // STATUS DA MENSAGEM ENVIADA
+                    // sent / delivered / read / failed
+                    // ========================
+                    if (value.getStatuses() != null && !value.getStatuses().isEmpty()) {
+                        for (WhatsAppMessageDTO.Status status : value.getStatuses()) {
+                            logStatus(status);
+                        }
+                    }
+
+                    // ========================
+                    // MENSAGENS RECEBIDAS
+                    // ========================
+                    if (value.getMessages() == null || value.getMessages().isEmpty()) {
+                        continue;
+                    }
 
                     for (WhatsAppMessageDTO.Message msg : value.getMessages()) {
                         if (!"text".equals(msg.getType())) continue;
@@ -96,6 +113,69 @@ public class WhatsAppWebhookController {
         }
 
         return ResponseEntity.ok("OK");
+    }
+
+    private void logStatus(WhatsAppMessageDTO.Status status) {
+        if (status == null) {
+            return;
+        }
+
+        String id = status.getId();
+        String statusType = status.getStatus();
+        String recipientId = status.getRecipientId();
+
+        if ("sent".equals(statusType)) {
+            log.info("✅ WHATSAPP SENT | wamid: {} | to: {}", id, recipientId);
+            return;
+        }
+
+        if ("delivered".equals(statusType)) {
+            log.info("📱 WHATSAPP DELIVERED | wamid: {} | to: {}", id, recipientId);
+            return;
+        }
+
+        if ("read".equals(statusType)) {
+            log.info("👁️ WHATSAPP READ | wamid: {} | to: {}", id, recipientId);
+            return;
+        }
+
+        if ("failed".equals(statusType)) {
+            String code = "?";
+            String title = "?";
+            String message = "?";
+            Object errorData = null;
+
+            if (status.getErrors() != null && !status.getErrors().isEmpty()) {
+                WhatsAppMessageDTO.StatusError error = status.getErrors().get(0);
+
+                if (error.getCode() != null) {
+                    code = String.valueOf(error.getCode());
+                }
+
+                if (error.getTitle() != null) {
+                    title = error.getTitle();
+                }
+
+                if (error.getMessage() != null) {
+                    message = error.getMessage();
+                }
+
+                errorData = error.getErrorData();
+            }
+
+            log.error(
+                    "❌ WHATSAPP FAILED | wamid: {} | to: {} | code: {} | title: {} | message: {} | errorData: {}",
+                    id,
+                    recipientId,
+                    code,
+                    title,
+                    message,
+                    errorData
+            );
+            return;
+        }
+
+        log.info("WHATSAPP STATUS | status: {} | wamid: {} | to: {}", statusType, id, recipientId);
     }
 
     private String normalizePhone(String phone) {
