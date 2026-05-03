@@ -30,6 +30,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(unique = true, nullable = false)
     private String telefone;
 
     @Column(nullable = false)
@@ -59,6 +60,18 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "telefone_verificado")
+    private Boolean telefoneVerificado = false;
+
+    @Column(name = "codigo_verificacao")
+    private String codigoVerificacao;
+
+    @Column(name = "codigo_ultimo_envio")
+    private LocalDateTime codigoUltimoEnvio;
+
+    @Column(name = "codigo_expira_em")
+    private LocalDateTime codigoExpiraEm;
+
     @PrePersist
     public void prePersist() {
         createdAt = LocalDateTime.now();
@@ -67,6 +80,7 @@ public class User {
         if (plano == null) plano = "start";
         if (perfil == null) perfil = "individual";
         if (failedAttempts == null) failedAttempts = 0;
+        if (telefoneVerificado == null) telefoneVerificado = false;
     }
 
     @PreUpdate
@@ -184,5 +198,49 @@ public class User {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    // ========================
+    // TELEFONE VERIFICADO
+    // ========================
+    public Boolean getTelefoneVerificado() {
+        return telefoneVerificado;
+    }
+
+    public void setTelefoneVerificado(Boolean telefoneVerificado) {
+        this.telefoneVerificado = telefoneVerificado;
+    }
+
+    // ========================
+    // CÓDIGO DE VERIFICAÇÃO
+    // ========================
+    public String getCodigoVerificacao() {
+        return codigoVerificacao;
+    }
+
+    public void setCodigoVerificacao(String codigoVerificacao) {
+        this.codigoVerificacao = codigoVerificacao;
+    }
+
+    // ========================
+    // ÚLTIMO ENVIO DO CÓDIGO
+    // ========================
+    public LocalDateTime getCodigoUltimoEnvio() {
+        return codigoUltimoEnvio;
+    }
+
+    public void setCodigoUltimoEnvio(LocalDateTime codigoUltimoEnvio) {
+        this.codigoUltimoEnvio = codigoUltimoEnvio;
+    }
+
+    // ========================
+    // EXPIRAÇÃO DO CÓDIGO
+    // ========================
+    public LocalDateTime getCodigoExpiraEm() {
+        return codigoExpiraEm;
+    }
+
+    public void setCodigoExpiraEm(LocalDateTime codigoExpiraEm) {
+        this.codigoExpiraEm = codigoExpiraEm;
     }
 }

@@ -5,13 +5,15 @@ import com.moneto.entity.Transaction;
 import com.moneto.entity.User;
 import com.moneto.repository.TransactionRepository;
 import com.moneto.repository.UserRepository;
+import com.moneto.util.PhoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -41,16 +43,44 @@ public class TransactionParserService {
 
     public void processWhatsAppMessage(String from, String messageText, String senderName) {
 
-        log.info("Mensagem recebida de {}: {}", from, messageText);
+        String normalizedPhone = PhoneUtils.normalize(from);
 
-        Optional<User> userOpt = userRepository.findByTelefone(from);
+        log.info("Mensagem recebida de {}: {}", normalizedPhone, messageText);
 
+        Optional<User> userOpt = userRepository.findByTelefone(normalizedPhone);
+
+        // ❌ NÃO CADASTRADO
         if (userOpt.isEmpty()) {
-            whatsAppService.sendMessage(from, "❌ Número não cadastrado no Moneto.");
+            whatsAppService.sendMessage(
+                    from,
+                    "❌ Não encontrei sua conta no MONETO.\n\n" +
+                            "Verifique se esse número está cadastrado:\n" +
+                            normalizedPhone
+            );
             return;
         }
 
         User user = userOpt.get();
+
+        // 🔒 🔥 BLOQUEIO PRINCIPAL (NOVO)
+        if (!Boolean.TRUE.equals(user.getTelefoneVerificado())) {
+            whatsAppService.sendMessage(
+                    from,
+                    "🔐 Seu número ainda não foi verificado.\n\n" +
+                            "Use o código enviado no cadastro para ativar o MONETO."
+            );
+            return;
+        }
+
+        // 🔒 PLANO SEM ACESSO
+        if (!hasWhatsappAccess(user)) {
+            whatsAppService.sendMessage(
+                    from,
+                    "🔒 Seu plano atual não inclui lançamentos via WhatsApp.\n\n" +
+                            "Faça upgrade para usar essa função."
+            );
+            return;
+        }
 
         ParsedTransactionDTO parsed = localParser.parseMessage(messageText);
 
@@ -60,11 +90,13 @@ public class TransactionParserService {
         }
 
         if (!Boolean.TRUE.equals(parsed.getParsed())) {
-            whatsAppService.sendMessage(from,
-                    "🤔 Não entendi...\n\n" +
-                            (parsed.getErro() != null ? parsed.getErro() : "") +
-                            "\n\nExemplos:\n" +
+            whatsAppService.sendMessage(
+                    from,
+                    "🤔 Não entendi sua mensagem.\n\n" +
+                            (parsed.getErro() != null ? parsed.getErro() + "\n\n" : "") +
+                            "Exemplos:\n" +
                             "• gastei 50 no mercado\n" +
+                            "• paguei 30 no uber\n" +
                             "• recebi 3000 de salário"
             );
             return;
@@ -82,6 +114,8 @@ public class TransactionParserService {
         tx.setCategoria(parsed.getCategoria());
         tx.setData(parsed.getData() != null ? parsed.getData() : LocalDate.now());
         tx.setOrigem("whatsapp");
+
+        // 🔥 ESSENCIAL → cada user separado
         tx.setUser(user);
 
         transactionRepository.save(tx);
@@ -90,12 +124,26 @@ public class TransactionParserService {
 
         String sinal = "RECEITA".equals(parsed.getTipo()) ? "+" : "-";
 
-        whatsAppService.sendMessage(from,
-                "✅ Registrado!\n\n" +
-                        parsed.getDescricao() + "\n" +
-                        sinal + "R$ " + parsed.getValor() + "\n" +
-                        "Saldo: R$ " + String.format("%.2f", saldo)
+        whatsAppService.sendMessage(
+                from,
+                "✅ Registrado no seu MONETO!\n\n" +
+                        "Descrição: " + parsed.getDescricao() + "\n" +
+                        "Categoria: " + parsed.getCategoria() + "\n" +
+                        "Valor: " + sinal + formatMoney(parsed.getValor().doubleValue()) + "\n" +
+                        "Saldo atual: " + formatMoney(saldo)
         );
+    }
+
+    private boolean hasWhatsappAccess(User user) {
+        if (user.getPlano() == null) {
+            return false;
+        }
+
+        String plano = user.getPlano().toLowerCase();
+
+        return plano.equals("essencial")
+                || plano.equals("pro")
+                || plano.equals("business");
     }
 
     private double calcularSaldo(User user) {
@@ -113,5 +161,10 @@ public class TransactionParserService {
                 .sum();
 
         return receitas - despesas;
+    }
+
+    private String formatMoney(double value) {
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+        return formatter.format(value);
     }
 }
