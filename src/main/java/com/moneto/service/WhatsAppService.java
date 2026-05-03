@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
@@ -33,10 +34,11 @@ public class WhatsAppService {
             Map<String, Object> body = new HashMap<>();
             body.put("messaging_product", "whatsapp");
             body.put("recipient_type", "individual");
-            body.put("to", to);
+            body.put("to", normalizePhone(to));
             body.put("type", "text");
 
             Map<String, String> text = new HashMap<>();
+            text.put("preview_url", "false");
             text.put("body", message);
             body.put("text", text);
 
@@ -46,12 +48,19 @@ public class WhatsAppService {
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
-            restTemplate.postForEntity(url, entity, String.class);
+            ResponseEntity<String> response =
+                    restTemplate.postForEntity(url, entity, String.class);
 
-            log.info("WhatsApp message sent to {}", to);
+            log.info("WhatsApp API status: {}", response.getStatusCode());
+            log.info("WhatsApp API response: {}", response.getBody());
+            log.info("WhatsApp message sent to {}", normalizePhone(to));
 
+        } catch (HttpStatusCodeException e) {
+            log.error("Erro HTTP ao enviar WhatsApp para {}", normalizePhone(to));
+            log.error("Status: {}", e.getStatusCode());
+            log.error("Response body: {}", e.getResponseBodyAsString());
         } catch (Exception e) {
-            log.error("Erro ao enviar WhatsApp para {}: {}", to, e.getMessage());
+            log.error("Erro ao enviar WhatsApp para {}: {}", normalizePhone(to), e.getMessage(), e);
         }
     }
 
@@ -69,5 +78,13 @@ public class WhatsAppService {
                         "Testa agora 👆";
 
         sendMessage(to, message);
+    }
+
+    private String normalizePhone(String phone) {
+        if (phone == null) {
+            return "";
+        }
+
+        return phone.replaceAll("\\D", "");
     }
 }
