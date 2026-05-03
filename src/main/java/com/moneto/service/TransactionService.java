@@ -7,6 +7,7 @@ import com.moneto.repository.TransactionRepository;
 import com.moneto.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,17 @@ public class TransactionService {
     public List<TransactionDTO> findAll(String email) {
         User user = getUser(email);
 
+        if (isStart(user)) {
+            LocalDate inicioMes = LocalDate.now().withDayOfMonth(1);
+            LocalDate fimMes = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+
+            return transactionRepository
+                    .findByUserIdAndDataBetweenOrderByDataDesc(user.getId(), inicioMes, fimMes)
+                    .stream()
+                    .map(tx -> toDTO(tx))
+                    .toList();
+        }
+
         return transactionRepository
                 .findByUserIdOrderByDataDesc(user.getId())
                 .stream()
@@ -35,12 +47,14 @@ public class TransactionService {
     public TransactionDTO create(String email, TransactionDTO dto) {
         User user = getUser(email);
 
+        validarLimiteLancamentosStart(user);
+
         Transaction tx = new Transaction();
         tx.setDescricao(dto.getDescricao());
         tx.setValor(dto.getValor());
         tx.setTipo(dto.getTipo());
         tx.setCategoria(dto.getCategoria());
-        tx.setData(dto.getData());
+        tx.setData(dto.getData() != null ? dto.getData() : LocalDate.now());
         tx.setOrigem(dto.getOrigem());
         tx.setUser(user);
 
@@ -50,6 +64,12 @@ public class TransactionService {
     public TransactionDTO update(String email, Long id, TransactionDTO dto) {
         Transaction tx = transactionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transação não encontrada"));
+
+        User user = getUser(email);
+
+        if (!tx.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Você não tem permissão para alterar esta transação.");
+        }
 
         tx.setDescricao(dto.getDescricao());
         tx.setValor(dto.getValor());
@@ -62,6 +82,15 @@ public class TransactionService {
     }
 
     public void delete(String email, Long id) {
+        Transaction tx = transactionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Transação não encontrada"));
+
+        User user = getUser(email);
+
+        if (!tx.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Você não tem permissão para excluir esta transação.");
+        }
+
         transactionRepository.deleteById(id);
     }
 
@@ -79,7 +108,48 @@ public class TransactionService {
         summary.put("despesas", despesas);
         summary.put("saldo", receitas - despesas);
 
+        if (isStart(user)) {
+            LocalDate inicioMes = LocalDate.now().withDayOfMonth(1);
+            LocalDate fimMes = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+
+            long lancamentosMes = transactionRepository
+                    .countByUserIdAndDataBetween(user.getId(), inicioMes, fimMes);
+
+            long whatsappMes = transactionRepository
+                    .countByUserIdAndOrigemAndDataBetween(user.getId(), "whatsapp", inicioMes, fimMes);
+
+            summary.put("plano", "start");
+            summary.put("limiteLancamentos", 30);
+            summary.put("lancamentosUsados", lancamentosMes);
+            summary.put("limiteWhatsapp", 10);
+            summary.put("whatsappUsado", whatsappMes);
+        } else {
+            summary.put("plano", user.getPlano());
+            summary.put("limiteLancamentos", "ilimitado");
+            summary.put("limiteWhatsapp", "ilimitado");
+        }
+
         return summary;
+    }
+
+    private void validarLimiteLancamentosStart(User user) {
+        if (!isStart(user)) {
+            return;
+        }
+
+        LocalDate inicioMes = LocalDate.now().withDayOfMonth(1);
+        LocalDate fimMes = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+
+        long totalLancamentos = transactionRepository
+                .countByUserIdAndDataBetween(user.getId(), inicioMes, fimMes);
+
+        if (totalLancamentos >= 30) {
+            throw new RuntimeException("Seu plano Start permite até 30 lançamentos por mês.");
+        }
+    }
+
+    private boolean isStart(User user) {
+        return user.getPlano() == null || "start".equalsIgnoreCase(user.getPlano());
     }
 
     private User getUser(String email) {

@@ -16,6 +16,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findByUserIdAndDataBetweenOrderByDataDesc(Long userId, LocalDate start, LocalDate end);
 
+    // NOVO: conta lançamentos do usuário no mês
+    long countByUserIdAndDataBetween(Long userId, LocalDate start, LocalDate end);
+
+    // NOVO: conta lançamentos por origem, ex: "whatsapp"
+    long countByUserIdAndOrigemAndDataBetween(Long userId, String origem, LocalDate start, LocalDate end);
+
     @Query("SELECT COALESCE(SUM(t.valor), 0) FROM Transaction t WHERE t.user.id = :userId AND t.tipo = :tipo")
     Double sumByUserIdAndTipo(@Param("userId") Long userId, @Param("tipo") String tipo);
 }

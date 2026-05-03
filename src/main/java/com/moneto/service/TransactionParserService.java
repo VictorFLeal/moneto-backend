@@ -49,7 +49,6 @@ public class TransactionParserService {
 
         Optional<User> userOpt = userRepository.findByTelefone(normalizedPhone);
 
-        // ❌ NÃO CADASTRADO
         if (userOpt.isEmpty()) {
             whatsAppService.sendMessage(
                     from,
@@ -62,7 +61,6 @@ public class TransactionParserService {
 
         User user = userOpt.get();
 
-        // 🔒 🔥 BLOQUEIO PRINCIPAL (NOVO)
         if (!Boolean.TRUE.equals(user.getTelefoneVerificado())) {
             whatsAppService.sendMessage(
                     from,
@@ -72,7 +70,6 @@ public class TransactionParserService {
             return;
         }
 
-        // 🔒 PLANO SEM ACESSO
         if (!hasWhatsappAccess(user)) {
             whatsAppService.sendMessage(
                     from,
@@ -80,6 +77,23 @@ public class TransactionParserService {
                             "Faça upgrade para usar essa função."
             );
             return;
+        }
+
+        if (isStart(user)) {
+            LocalDate inicioMes = LocalDate.now().withDayOfMonth(1);
+            LocalDate fimMes = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+
+            long whatsappUsado = transactionRepository
+                    .countByUserIdAndOrigemAndDataBetween(user.getId(), "whatsapp", inicioMes, fimMes);
+
+            if (whatsappUsado >= 10) {
+                whatsAppService.sendMessage(
+                        from,
+                        "🔒 Você atingiu o limite de 10 mensagens via WhatsApp do plano Start neste mês.\n\n" +
+                                "Faça upgrade para o MONETO Essencial e use WhatsApp sem esse limite."
+                );
+                return;
+            }
         }
 
         ParsedTransactionDTO parsed = localParser.parseMessage(messageText);
@@ -114,8 +128,6 @@ public class TransactionParserService {
         tx.setCategoria(parsed.getCategoria());
         tx.setData(parsed.getData() != null ? parsed.getData() : LocalDate.now());
         tx.setOrigem("whatsapp");
-
-        // 🔥 ESSENCIAL → cada user separado
         tx.setUser(user);
 
         transactionRepository.save(tx);
@@ -141,9 +153,14 @@ public class TransactionParserService {
 
         String plano = user.getPlano().toLowerCase();
 
-        return plano.equals("essencial")
+        return plano.equals("start")
+                || plano.equals("essencial")
                 || plano.equals("pro")
                 || plano.equals("business");
+    }
+
+    private boolean isStart(User user) {
+        return user.getPlano() == null || "start".equalsIgnoreCase(user.getPlano());
     }
 
     private double calcularSaldo(User user) {
