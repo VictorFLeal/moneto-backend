@@ -7,6 +7,7 @@ import com.moneto.repository.GoalRepository;
 import com.moneto.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -25,7 +26,7 @@ public class GoalService {
 
         return goalRepository.findByUserId(user.getId())
                 .stream()
-                .map(g -> toDTO(g))
+                .map(this::toDTO)
                 .toList();
     }
 
@@ -45,10 +46,17 @@ public class GoalService {
     }
 
     public GoalDTO update(String email, Long id, GoalDTO dto) {
+        User user = getUser(email);
+
         Goal goal = goalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Meta não encontrada"));
 
+        if (!goal.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Meta não pertence ao utilizador");
+        }
+
         goal.setTitulo(dto.getTitulo());
+        goal.setIcone(dto.getIcone());
         goal.setValorMeta(dto.getValorMeta());
         goal.setValorAtual(dto.getValorAtual());
         goal.setPrazo(dto.getPrazo());
@@ -57,8 +65,46 @@ public class GoalService {
         return toDTO(goalRepository.save(goal));
     }
 
-    public void delete(Long id) {
-        goalRepository.deleteById(id);
+    public GoalDTO addValue(String email, Long id, BigDecimal valor) {
+        User user = getUser(email);
+
+        Goal goal = goalRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Meta não encontrada"));
+
+        if (!goal.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Meta não pertence ao utilizador");
+        }
+
+        if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("Valor inválido");
+        }
+
+        BigDecimal atual = goal.getValorAtual() != null ? goal.getValorAtual() : BigDecimal.ZERO;
+        BigDecimal meta = goal.getValorMeta() != null ? goal.getValorMeta() : BigDecimal.ZERO;
+
+        BigDecimal novoValor = atual.add(valor);
+
+        if (meta.compareTo(BigDecimal.ZERO) > 0 && novoValor.compareTo(meta) >= 0) {
+            novoValor = meta;
+            goal.setStatus("concluida");
+        }
+
+        goal.setValorAtual(novoValor);
+
+        return toDTO(goalRepository.save(goal));
+    }
+
+    public void delete(String email, Long id) {
+        User user = getUser(email);
+
+        Goal goal = goalRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Meta não encontrada"));
+
+        if (!goal.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Meta não pertence ao utilizador");
+        }
+
+        goalRepository.delete(goal);
     }
 
     private User getUser(String email) {

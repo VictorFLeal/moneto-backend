@@ -7,7 +7,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/goals")
@@ -41,12 +43,23 @@ public class GoalController {
         return ResponseEntity.ok(goalService.update(user.getUsername(), id, dto));
     }
 
+    @PostMapping("/{id}/add-value")
+    public ResponseEntity<GoalDTO> addValue(
+            @AuthenticationPrincipal UserDetails user,
+            @PathVariable Long id,
+            @RequestBody Map<String, BigDecimal> body) {
+
+        BigDecimal valor = body.get("valor");
+
+        return ResponseEntity.ok(goalService.addValue(user.getUsername(), id, valor));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @AuthenticationPrincipal UserDetails user,
             @PathVariable Long id) {
 
-        goalService.delete(id);
+        goalService.delete(user.getUsername(), id);
         return ResponseEntity.noContent().build();
     }
 }
