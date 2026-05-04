@@ -35,6 +35,24 @@ public class ReserveController {
         return ResponseEntity.ok(reserveService.create(user.getUsername(), dto));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ReserveDTO> update(
+            @AuthenticationPrincipal UserDetails user,
+            @PathVariable Long id,
+            @RequestBody ReserveDTO dto) {
+
+        return ResponseEntity.ok(reserveService.update(user.getUsername(), id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @AuthenticationPrincipal UserDetails user,
+            @PathVariable Long id) {
+
+        reserveService.delete(user.getUsername(), id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/deposit")
     public ResponseEntity<ReserveDTO> deposit(
             @AuthenticationPrincipal UserDetails user,
