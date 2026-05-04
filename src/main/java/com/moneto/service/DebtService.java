@@ -14,14 +14,22 @@ public class DebtService {
 
     private final DebtRepository debtRepository;
     private final UserRepository userRepository;
+    private final PlanAccessService planAccessService;
 
-    public DebtService(DebtRepository debtRepository, UserRepository userRepository) {
+    public DebtService(
+            DebtRepository debtRepository,
+            UserRepository userRepository,
+            PlanAccessService planAccessService
+    ) {
         this.debtRepository = debtRepository;
         this.userRepository = userRepository;
+        this.planAccessService = planAccessService;
     }
 
     public List<DebtDTO> findAll(String email) {
         User user = getUser(email);
+
+        planAccessService.validarModoDividas(user);
 
         return debtRepository.findByUserId(user.getId())
                 .stream()
@@ -31,6 +39,8 @@ public class DebtService {
 
     public DebtDTO create(String email, DebtDTO dto) {
         User user = getUser(email);
+
+        planAccessService.validarModoDividas(user);
 
         Debt debt = new Debt();
         debt.setNome(dto.getNome());
@@ -46,8 +56,16 @@ public class DebtService {
     }
 
     public DebtDTO update(String email, Long id, DebtDTO dto) {
+        User user = getUser(email);
+
+        planAccessService.validarModoDividas(user);
+
         Debt debt = debtRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Dívida não encontrada"));
+
+        if (!debt.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Você não tem permissão para alterar esta dívida.");
+        }
 
         debt.setValorPago(dto.getValorPago());
         debt.setStatus(dto.getStatus());
@@ -55,7 +73,18 @@ public class DebtService {
         return toDTO(debtRepository.save(debt));
     }
 
-    public void delete(Long id) {
+    public void delete(String email, Long id) {
+        User user = getUser(email);
+
+        planAccessService.validarModoDividas(user);
+
+        Debt debt = debtRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Dívida não encontrada"));
+
+        if (!debt.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Você não tem permissão para excluir esta dívida.");
+        }
+
         debtRepository.deleteById(id);
     }
 

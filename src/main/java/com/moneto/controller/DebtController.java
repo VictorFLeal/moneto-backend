@@ -46,7 +46,7 @@ public class DebtController {
             @AuthenticationPrincipal UserDetails user,
             @PathVariable Long id) {
 
-        debtService.delete(id);
+        debtService.delete(user.getUsername(), id);
         return ResponseEntity.noContent().build();
     }
 }

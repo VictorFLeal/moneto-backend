@@ -99,6 +99,19 @@ public class TransactionParserService {
         ParsedTransactionDTO parsed = localParser.parseMessage(messageText);
 
         if (!Boolean.TRUE.equals(parsed.getParsed())) {
+            if (!canUseAI(user)) {
+                whatsAppService.sendMessage(
+                        from,
+                        "🤔 Não consegui entender sua mensagem com o parser básico.\n\n" +
+                                "A IA do MONETO está disponível apenas no plano Pro ou Business.\n\n" +
+                                "Exemplos que funcionam no seu plano:\n" +
+                                "• gastei 50 no mercado\n" +
+                                "• paguei 30 no uber\n" +
+                                "• recebi 3000 de salário"
+                );
+                return;
+            }
+
             log.warn("Parser local falhou, usando OpenAI...");
             parsed = openAIService.parseMessage(messageText);
         }
@@ -161,6 +174,16 @@ public class TransactionParserService {
 
     private boolean isStart(User user) {
         return user.getPlano() == null || "start".equalsIgnoreCase(user.getPlano());
+    }
+
+    private boolean canUseAI(User user) {
+        if (user.getPlano() == null) {
+            return false;
+        }
+
+        String plano = user.getPlano().toLowerCase();
+
+        return plano.equals("pro") || plano.equals("business");
     }
 
     private double calcularSaldo(User user) {
