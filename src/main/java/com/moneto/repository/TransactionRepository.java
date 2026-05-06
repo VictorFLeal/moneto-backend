@@ -33,6 +33,14 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             LocalDate end
     );
 
+    boolean existsByUserIdAndOrigemAndDescricaoAndDataBetween(
+            Long userId,
+            String origem,
+            String descricao,
+            LocalDate start,
+            LocalDate end
+    );
+
     @Query("SELECT COALESCE(SUM(t.valor), 0) FROM Transaction t WHERE t.user.id = :userId AND t.tipo = :tipo")
     Double sumByUserIdAndTipo(@Param("userId") Long userId, @Param("tipo") String tipo);
 }

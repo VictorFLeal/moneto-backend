@@ -18,19 +18,24 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final CategoryService categoryService;
+    private final RecurringIncomeService recurringIncomeService;
 
     public TransactionService(
             TransactionRepository transactionRepository,
             UserRepository userRepository,
-            CategoryService categoryService
+            CategoryService categoryService,
+            RecurringIncomeService recurringIncomeService
     ) {
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
         this.categoryService = categoryService;
+        this.recurringIncomeService = recurringIncomeService;
     }
 
     public List<TransactionDTO> findAll(String email) {
         User user = getUser(email);
+
+        recurringIncomeService.processMonthlyIncomes(user);
 
         if (isStart(user)) {
             LocalDate inicioMes = LocalDate.now().withDayOfMonth(1);
@@ -114,6 +119,8 @@ public class TransactionService {
 
     public Map<String, Object> getSummary(String email) {
         User user = getUser(email);
+
+        recurringIncomeService.processMonthlyIncomes(user);
 
         Double receitas = transactionRepository.sumByUserIdAndTipo(user.getId(), "RECEITA");
         Double despesas = transactionRepository.sumByUserIdAndTipo(user.getId(), "DESPESA");
