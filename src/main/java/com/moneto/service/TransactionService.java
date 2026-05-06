@@ -17,10 +17,16 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
+    private final CategoryService categoryService;
 
-    public TransactionService(TransactionRepository transactionRepository, UserRepository userRepository) {
+    public TransactionService(
+            TransactionRepository transactionRepository,
+            UserRepository userRepository,
+            CategoryService categoryService
+    ) {
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
+        this.categoryService = categoryService;
     }
 
     public List<TransactionDTO> findAll(String email) {
@@ -33,14 +39,14 @@ public class TransactionService {
             return transactionRepository
                     .findByUserIdAndDataBetweenOrderByDataDesc(user.getId(), inicioMes, fimMes)
                     .stream()
-                    .map(tx -> toDTO(tx))
+                    .map(this::toDTO)
                     .toList();
         }
 
         return transactionRepository
                 .findByUserIdOrderByDataDesc(user.getId())
                 .stream()
-                .map(tx -> toDTO(tx))
+                .map(this::toDTO)
                 .toList();
     }
 
@@ -49,11 +55,17 @@ public class TransactionService {
 
         validarLimiteLancamentosStart(user);
 
+        String categoriaFinal = categoryService.getCanonicalCategoryName(
+                user,
+                dto.getCategoria(),
+                dto.getTipo()
+        );
+
         Transaction tx = new Transaction();
         tx.setDescricao(dto.getDescricao());
         tx.setValor(dto.getValor());
-        tx.setTipo(dto.getTipo());
-        tx.setCategoria(dto.getCategoria());
+        tx.setTipo(normalizeType(dto.getTipo()));
+        tx.setCategoria(categoriaFinal);
         tx.setData(dto.getData() != null ? dto.getData() : LocalDate.now());
         tx.setOrigem(dto.getOrigem());
         tx.setUser(user);
@@ -71,11 +83,17 @@ public class TransactionService {
             throw new RuntimeException("Você não tem permissão para alterar esta transação.");
         }
 
+        String categoriaFinal = categoryService.getCanonicalCategoryName(
+                user,
+                dto.getCategoria(),
+                dto.getTipo()
+        );
+
         tx.setDescricao(dto.getDescricao());
         tx.setValor(dto.getValor());
-        tx.setTipo(dto.getTipo());
-        tx.setCategoria(dto.getCategoria());
-        tx.setData(dto.getData());
+        tx.setTipo(normalizeType(dto.getTipo()));
+        tx.setCategoria(categoriaFinal);
+        tx.setData(dto.getData() != null ? dto.getData() : LocalDate.now());
         tx.setOrigem(dto.getOrigem());
 
         return toDTO(transactionRepository.save(tx));
@@ -155,6 +173,14 @@ public class TransactionService {
     private User getUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilizador não encontrado"));
+    }
+
+    private String normalizeType(String tipo) {
+        if (tipo == null || tipo.isBlank()) {
+            return "DESPESA";
+        }
+
+        return tipo.trim().toUpperCase();
     }
 
     private TransactionDTO toDTO(Transaction tx) {

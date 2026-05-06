@@ -1,6 +1,7 @@
 package com.moneto.service;
 
 import com.moneto.entity.Budget;
+import com.moneto.entity.Category;
 import com.moneto.entity.User;
 import com.moneto.repository.BudgetRepository;
 import com.moneto.repository.UserRepository;
@@ -14,6 +15,7 @@ public class BudgetService {
 
     private final BudgetRepository repo;
     private final UserRepository userRepo;
+    private final CategoryService categoryService;
 
     private static final List<String> DEFAULT_CATEGORIES = List.of(
             "Alimentação",
@@ -22,19 +24,24 @@ public class BudgetService {
             "Saúde",
             "Educação",
             "Lazer",
+            "Tecnologia",
+            "Vestuário",
             "Outros"
     );
 
-    public BudgetService(BudgetRepository repo, UserRepository userRepo) {
+    public BudgetService(BudgetRepository repo, UserRepository userRepo, CategoryService categoryService) {
         this.repo = repo;
         this.userRepo = userRepo;
+        this.categoryService = categoryService;
     }
 
     public List<Budget> getAll(String email) {
         User user = userRepo.findByEmail(email).orElseThrow();
 
+        categoryService.ensureDefaultCategories(user);
+
         for (String categoria : DEFAULT_CATEGORIES) {
-            repo.findByUserIdAndCategoria(user.getId(), categoria)
+            repo.findByUserIdAndCategoriaIgnoreCase(user.getId(), categoria)
                     .orElseGet(() -> {
                         Budget budget = new Budget();
                         budget.setCategoria(categoria);
@@ -57,12 +64,15 @@ public class BudgetService {
             throw new RuntimeException("Categoria é obrigatória.");
         }
 
-        if (repo.findByUserIdAndCategoria(user.getId(), categoria).isPresent()) {
+        Category category = categoryService.findOrCreate(user, categoria, "DESPESA", b.getIcone());
+        String categoriaFinal = category.getNome();
+
+        if (repo.findByUserIdAndCategoriaIgnoreCase(user.getId(), categoriaFinal).isPresent()) {
             throw new RuntimeException("Já existe um orçamento para essa categoria.");
         }
 
         Budget budget = new Budget();
-        budget.setCategoria(categoria);
+        budget.setCategoria(categoriaFinal);
         budget.setLimite(b.getLimite() != null ? b.getLimite() : BigDecimal.ZERO);
         budget.setIcone(b.getIcone());
         budget.setUser(user);
@@ -85,14 +95,17 @@ public class BudgetService {
             throw new RuntimeException("Categoria é obrigatória.");
         }
 
-        repo.findByUserIdAndCategoria(user.getId(), categoria)
+        Category category = categoryService.findOrCreate(user, categoria, "DESPESA", b.getIcone());
+        String categoriaFinal = category.getNome();
+
+        repo.findByUserIdAndCategoriaIgnoreCase(user.getId(), categoriaFinal)
                 .ifPresent(other -> {
                     if (!other.getId().equals(id)) {
                         throw new RuntimeException("Já existe um orçamento para essa categoria.");
                     }
                 });
 
-        existing.setCategoria(categoria);
+        existing.setCategoria(categoriaFinal);
         existing.setLimite(b.getLimite() != null ? b.getLimite() : BigDecimal.ZERO);
         existing.setIcone(b.getIcone());
 
@@ -108,7 +121,7 @@ public class BudgetService {
             throw new RuntimeException("Você não tem permissão para excluir este orçamento.");
         }
 
-        if (DEFAULT_CATEGORIES.contains(existing.getCategoria())) {
+        if (DEFAULT_CATEGORIES.stream().anyMatch(c -> c.equalsIgnoreCase(existing.getCategoria()))) {
             existing.setLimite(BigDecimal.ZERO);
             repo.save(existing);
             return;
